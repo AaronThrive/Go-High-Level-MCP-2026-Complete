@@ -69,10 +69,16 @@ npm run apps:start:stdio
 Included app tools:
 
 - `show_ghl_tool_explorer_app`
-- `show_ghl_contact_360_app`
-- `show_ghl_pipeline_command_app`
-- `show_ghl_ads_reporting_app`
-- `show_ghl_agency_health_app`
+- `show_ghl_contact_workspace_app`
+- `show_ghl_lead_intake_app`
+- `show_ghl_conversation_inbox_app`
+- `show_ghl_pipeline_board_app`
+- `show_ghl_appointment_desk_app`
+- `show_ghl_automation_launcher_app`
+- `show_ghl_reputation_center_app`
+- `show_ghl_ads_dashboard_app`
+- `show_ghl_billing_commerce_app`
+- `show_ghl_agency_admin_app`
 
 See `mcp-apps/README.md` for host config and HTTP mode.
 
@@ -82,7 +88,7 @@ For a normal browser preview:
 npm run apps:start:http
 ```
 
-Open `http://localhost:3001/preview`.
+Open `http://localhost:3001/preview`. The tool explorer links to every CRM workspace preview.
 
 ## Transports
 

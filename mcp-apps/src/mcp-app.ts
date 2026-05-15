@@ -20,6 +20,23 @@ type AppPayload = {
   suggestedToolCalls?: Array<{ label: string; tool: string; arguments?: Record<string, unknown>; requiresConfirmation?: boolean }>;
 };
 
+type SectionPayload = {
+  id: string;
+  title: string;
+  kind: string;
+  description?: string;
+  fields?: Array<{
+    name: string;
+    label: string;
+    type: string;
+    placeholder?: string;
+    options?: string[];
+  }>;
+  records?: Record<string, unknown>[];
+  tools?: string[];
+  items?: Array<{ label: string; detail?: string; status?: string }>;
+};
+
 let payload: AppPayload | null = null;
 
 const root = document.querySelector('.shell') as HTMLElement;
@@ -121,17 +138,29 @@ function render(): void {
 
 function renderContent(value: AppPayload): string {
   if (value.appId === 'tool-explorer') return renderToolExplorer(value);
-  if (value.appId === 'contact-360') return renderRecordPanels(value, ['contact', 'conversations', 'opportunities', 'notes']);
-  if (value.appId === 'pipeline-command') return renderRecordPanels(value, ['pipelines', 'opportunities', 'staleOpportunities']);
-  if (value.appId === 'ads-reporting') return renderRecordPanels(value, ['adReports', 'attribution']);
-  if (value.appId === 'agency-health') return renderRecordPanels(value, ['location', 'users', 'calendars', 'pipelines']);
+  if (Array.isArray(value.data?.sections)) return renderWorkspace(value);
   return `<section class="panel"><h2>Data</h2><div class="panel-body"><pre>${escapeHtml(JSON.stringify(value.data || {}, null, 2))}</pre></div></section>`;
 }
 
 function renderToolExplorer(value: AppPayload): string {
   const tools = Array.isArray(value.data?.tools) ? value.data.tools as Record<string, unknown>[] : [];
+  const apps = Array.isArray(value.data?.apps) ? value.data.apps as Record<string, unknown>[] : [];
   const categories = [...new Set(tools.map((tool) => String(tool.category || '')).filter(Boolean))].sort();
   return `
+    <section class="panel">
+      <h2>CRM Workspace Apps</h2>
+      <div class="panel-body">
+        <div class="app-grid">
+          ${apps.map((item) => `
+            <a class="app-card" href="${escapeHtml(item.preview)}">
+              <strong>${escapeHtml(item.title)}</strong>
+              <span>${escapeHtml(item.summary)}</span>
+              <code>${escapeHtml(item.toolName)}</code>
+            </a>
+          `).join('')}
+        </div>
+      </div>
+    </section>
     <section class="panel">
       <h2>Tool Inventory</h2>
       <div class="panel-body">
@@ -157,6 +186,109 @@ function renderToolExplorer(value: AppPayload): string {
         </table>
       </div>
     </section>`;
+}
+
+function renderWorkspace(value: AppPayload): string {
+  const sections = value.data?.sections as SectionPayload[];
+  const readTools = Array.isArray(value.data?.readTools) ? value.data.readTools as string[] : [];
+  const writeTools = Array.isArray(value.data?.writeTools) ? value.data.writeTools as string[] : [];
+  const destructiveTools = Array.isArray(value.data?.destructiveTools) ? value.data.destructiveTools as string[] : [];
+  return `
+    <section class="panel">
+      <h2>Workspace Tooling</h2>
+      <div class="panel-body tool-summary">
+        ${renderToolBadges('Read', readTools)}
+        ${renderToolBadges('Write', writeTools)}
+        ${destructiveTools.length ? renderToolBadges('Confirm/Delete', destructiveTools, 'danger') : ''}
+      </div>
+    </section>
+    ${sections.map(renderSection).join('')}`;
+}
+
+function renderToolBadges(label: string, tools: string[], tone = ''): string {
+  return `
+    <div>
+      <div class="group-label">${escapeHtml(label)}</div>
+      <div class="badge-row ${tone}">
+        ${tools.map((tool) => `<code>${escapeHtml(tool)}</code>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderSection(section: SectionPayload): string {
+  let body = '';
+  if (section.kind === 'form') body = renderForm(section.fields || []);
+  else if (section.kind === 'tool-group') body = renderToolList(section.tools || []);
+  else if (section.kind === 'checklist') body = renderChecklist(section.records || section.items || []);
+  else if (section.kind === 'kanban') body = renderKanban(section.records || []);
+  else if (section.kind === 'report') body = renderReport(section.records || []);
+  else body = renderData(section.records || []);
+
+  return `
+    <section class="panel">
+      <h2>${escapeHtml(section.title)}</h2>
+      <div class="panel-body">
+        ${section.description ? `<p class="muted section-description">${escapeHtml(section.description)}</p>` : ''}
+        ${body}
+      </div>
+    </section>`;
+}
+
+function renderForm(fields: NonNullable<SectionPayload['fields']>): string {
+  if (!fields.length) return '<p class="muted">No form fields configured.</p>';
+  return `<div class="crm-form">
+    ${fields.map((field) => {
+      if (field.type === 'textarea') {
+        return `<label><span>${escapeHtml(field.label)}</span><textarea placeholder="${escapeHtml(field.placeholder || '')}"></textarea></label>`;
+      }
+      if (field.type === 'select') {
+        return `<label><span>${escapeHtml(field.label)}</span><select>${(field.options || []).map((option) => `<option>${escapeHtml(option)}</option>`).join('')}</select></label>`;
+      }
+      return `<label><span>${escapeHtml(field.label)}</span><input type="${escapeHtml(field.type)}" placeholder="${escapeHtml(field.placeholder || '')}"></label>`;
+    }).join('')}
+  </div>`;
+}
+
+function renderToolList(tools: string[]): string {
+  if (!tools.length) return '<p class="muted">No tools configured.</p>';
+  return `<div class="tool-list">${tools.map((tool) => `<code>${escapeHtml(tool)}</code>`).join('')}</div>`;
+}
+
+function renderChecklist(items: Array<Record<string, unknown> | { label: string; detail?: string; status?: string }>): string {
+  const rows = items.length ? items : [
+    { label: 'Read current CRM state', status: 'Ready' },
+    { label: 'Review generated changes', status: 'Confirm' },
+    { label: 'Run write tools only after approval', status: 'Guarded' },
+  ];
+  return `<div class="item-list">${rows.map((item) => {
+    const row = item as Record<string, unknown>;
+    return `
+      <article class="item checklist-item">
+        <div class="item-title">${escapeHtml(String(row.label || row.name || 'Checklist item'))}</div>
+        <div class="muted">${escapeHtml(String(row.detail || row.status || ''))}</div>
+      </article>`;
+  }).join('')}</div>`;
+}
+
+function renderKanban(records: Record<string, unknown>[]): string {
+  const items = records.length ? records : [];
+  const groups = new Map<string, Record<string, unknown>[]>();
+  for (const item of items) {
+    const stage = String(item.stage || item.status || 'Open');
+    groups.set(stage, [...(groups.get(stage) || []), item]);
+  }
+  if (!groups.size) return '<p class="muted">No opportunities returned.</p>';
+  return `<div class="kanban">${[...groups.entries()].map(([stage, cards]) => `
+    <div class="kanban-col">
+      <h3>${escapeHtml(stage)}</h3>
+      ${cards.map(renderItem).join('')}
+    </div>
+  `).join('')}</div>`;
+}
+
+function renderReport(records: Record<string, unknown>[]): string {
+  if (!records.length) return '<p class="muted">No report rows returned.</p>';
+  return `<div class="report-grid">${records.slice(0, 8).map(renderItem).join('')}</div>`;
 }
 
 function attachExplorerFilters(): void {

@@ -5,10 +5,18 @@ Companion MCP Apps for the GoHighLevel MCP server. This package keeps interactiv
 ## Apps
 
 - `show_ghl_tool_explorer_app` - browse/filter the generated MCP tool inventory.
-- `show_ghl_contact_360_app` - contact lookup workspace with related conversations and opportunities.
-- `show_ghl_pipeline_command_app` - pipeline and opportunity review workspace.
-- `show_ghl_ads_reporting_app` - ads and attribution reporting workspace.
-- `show_ghl_agency_health_app` - location setup and operations health overview.
+- `show_ghl_contact_workspace_app` - full CRM contact form with notes, tags, tasks, messages, appointments, and opportunities.
+- `show_ghl_lead_intake_app` - form submissions, uncontacted leads, duplicate checks, qualification, and workflow enrollment.
+- `show_ghl_conversation_inbox_app` - SMS/email inbox with thread context and reply composer.
+- `show_ghl_pipeline_board_app` - sales pipeline board, opportunity form, stale deal queue, and next actions.
+- `show_ghl_appointment_desk_app` - calendars, free slots, booking, reschedule, resources, and appointment notes.
+- `show_ghl_automation_launcher_app` - campaigns, workflows, scheduled messages, and contact enrollment.
+- `show_ghl_reputation_center_app` - reviews inbox, reply composer, review requests, links, and stats.
+- `show_ghl_ads_dashboard_app` - ads, attribution, funnels, conversions, and revenue reporting.
+- `show_ghl_billing_commerce_app` - invoices, estimates, orders, transactions, subscriptions, coupons, and products.
+- `show_ghl_agency_admin_app` - locations, users, snapshots, phone, media, setup health, and rollout controls.
+
+Legacy aliases from the first prototype still work: `show_ghl_contact_360_app`, `show_ghl_pipeline_command_app`, `show_ghl_ads_reporting_app`, and `show_ghl_agency_health_app`.
 
 All apps are registered as MCP tools linked to the shared `ui://ghl-mcp-apps/app.html` resource.
 
@@ -59,10 +67,16 @@ Browser preview:
 
 ```text
 http://localhost:3001/preview
-http://localhost:3001/preview?app=contact-360
-http://localhost:3001/preview?app=pipeline-command
-http://localhost:3001/preview?app=ads-reporting
-http://localhost:3001/preview?app=agency-health
+http://localhost:3001/preview?app=contact-workspace
+http://localhost:3001/preview?app=lead-intake
+http://localhost:3001/preview?app=conversation-inbox
+http://localhost:3001/preview?app=pipeline-board
+http://localhost:3001/preview?app=appointment-desk
+http://localhost:3001/preview?app=automation-launcher
+http://localhost:3001/preview?app=reputation-center
+http://localhost:3001/preview?app=ads-dashboard
+http://localhost:3001/preview?app=billing-commerce
+http://localhost:3001/preview?app=agency-admin
 ```
 
 The preview route is for local visual testing in a normal browser. Real MCP hosts still open the app through the MCP tool/resource flow.

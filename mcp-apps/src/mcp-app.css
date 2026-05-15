@@ -79,6 +79,29 @@ h1 {
   gap: 12px;
 }
 
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.app-card {
+  display: grid;
+  gap: 6px;
+  min-height: 118px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--color-border-primary, #e3e4de);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--color-background-primary, #fff);
+}
+
+.app-card span {
+  color: var(--color-text-secondary, #656960);
+  line-height: 1.35;
+}
+
 .panel {
   overflow: hidden;
 }
@@ -92,6 +115,100 @@ h1 {
 
 .panel-body {
   padding: 12px 14px;
+}
+
+.section-description {
+  margin-top: 0;
+}
+
+.tool-summary {
+  display: grid;
+  gap: 12px;
+}
+
+.group-label {
+  margin-bottom: 6px;
+  color: var(--color-text-secondary, #656960);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.badge-row,
+.tool-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.badge-row code,
+.tool-list code {
+  border: 1px solid var(--color-border-primary, #d8d9d2);
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: var(--color-background-primary, #f7f7f4);
+}
+
+.badge-row.danger code {
+  border-color: #d19890;
+  color: #8a241a;
+  background: #fff1ef;
+}
+
+.crm-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.crm-form label {
+  display: grid;
+  gap: 5px;
+}
+
+.crm-form span {
+  color: var(--color-text-secondary, #656960);
+  font-size: 13px;
+}
+
+.crm-form input,
+.crm-form select,
+.crm-form textarea {
+  width: 100%;
+  border: 1px solid var(--color-border-primary, #cfd2ca);
+  border-radius: 6px;
+  padding: 9px 10px;
+  background: var(--color-background-primary, #fff);
+  color: var(--color-text-primary, #171815);
+}
+
+.crm-form textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.kanban-col {
+  border: 1px solid var(--color-border-primary, #e3e4de);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--color-background-primary, #f7f7f4);
+}
+
+.kanban-col h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
 }
 
 .toolbar {
@@ -147,6 +264,7 @@ code {
   border: 1px solid var(--color-border-primary, #e3e4de);
   border-radius: 6px;
   padding: 10px;
+  background: var(--color-background-secondary, #fff);
 }
 
 .item-title {
@@ -177,6 +295,13 @@ code {
 .actions button.primary {
   background: var(--color-text-primary, #171815);
   color: var(--color-background-primary, #fff);
+}
+
+.checklist-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
 }
 
 @media (max-width: 720px) {

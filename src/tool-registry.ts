@@ -59,6 +59,7 @@ import { AgentStudioTools } from './tools/agent-studio-tools.js';
 import { NotesTools } from './tools/notes-tools.js';
 import { OfficialSpecTools } from './tools/official-spec-tools.js';
 import { WorkflowInsightsTools } from './tools/workflow-insights-tools.js';
+import { AgentWorkspaceTools } from './tools/agent-workspace-tools.js';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -85,6 +86,8 @@ export interface ToolInventoryItem {
   path?: string;
   operationId?: string;
 }
+
+type ToolProfile = 'full' | 'curated' | 'raw';
 
 // ─── Annotation Inference ───────────────────────────────────
 
@@ -176,6 +179,7 @@ export class ToolRegistry {
   private modules: ToolModule[] = [];
   private toolToModule = new Map<string, ToolModule>();
   private allToolDefs: Tool[] = [];
+  private profile: ToolProfile = readToolProfile();
 
   constructor(ghlClient: GHLApiClient) {
     this.initModules(ghlClient);
@@ -233,6 +237,7 @@ export class ToolRegistry {
     const notesTools = new NotesTools(ghl);
     const officialSpecTools = new OfficialSpecTools(ghl);
     const workflowInsightsTools = new WorkflowInsightsTools(ghl);
+    const agentWorkspaceTools = new AgentWorkspaceTools(ghl);
 
     // Register legacy modules (executeTool pattern)
     this.addModule('contact', contactTools, 'getToolDefinitions', 'executeTool');
@@ -285,6 +290,7 @@ export class ToolRegistry {
     this.addModule('notes', notesTools, 'getToolDefinitions', 'handleToolCall');
     this.addModule('officialSpec', officialSpecTools, 'getToolDefinitions', 'handleToolCall');
     this.addModule('workflowInsights', workflowInsightsTools, 'getToolDefinitions', 'handleToolCall');
+    this.addModule('agentWorkspace', agentWorkspaceTools, 'getToolDefinitions', 'handleToolCall');
 
     // Workflow Builder — internal API with Firebase auth (no GHL API client dependency)
     const workflowBuilderTools = new WorkflowBuilderTools();
@@ -322,7 +328,7 @@ export class ToolRegistry {
   registerAll(server: McpServer): number {
     let count = 0;
 
-    for (const tool of this.allToolDefs) {
+    for (const tool of this.visibleToolDefs()) {
       const mod = this.toolToModule.get(tool.name);
       if (!mod) continue;
 
@@ -369,6 +375,7 @@ export class ToolRegistry {
   async callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
     const mod = this.toolToModule.get(name);
     if (!mod) return undefined;
+    if (!this.isToolVisible(name)) return undefined;
     return mod.executeTool(name, args);
   }
 
@@ -379,7 +386,7 @@ export class ToolRegistry {
     const counts: Record<string, number> = {};
     for (const mod of this.modules) {
       try {
-        counts[mod.name] = mod.getTools().length;
+        counts[mod.name] = mod.getTools().filter((tool) => this.isToolVisible(tool.name)).length;
       } catch {
         counts[mod.name] = 0;
       }
@@ -398,7 +405,7 @@ export class ToolRegistry {
    */
   getAllToolDefinitions(): Tool[] {
     // Add annotations to existing tool defs for the REST endpoint
-    return this.allToolDefs.map(tool => {
+    return this.visibleToolDefs().map(tool => {
       const meta = (tool as any)._meta;
       const annotations = inferAnnotations(tool.name, meta);
       return {
@@ -409,7 +416,7 @@ export class ToolRegistry {
   }
 
   getToolInventory(): ToolInventoryItem[] {
-    return this.allToolDefs.map((tool) => {
+    return this.visibleToolDefs().map((tool) => {
       const mod = this.toolToModule.get(tool.name);
       return inferToolInventoryItem(tool, mod?.name || 'unknown');
     });
@@ -419,15 +426,41 @@ export class ToolRegistry {
    * Get count of registered GHL tools (excluding apps)
    */
   getToolCount(): number {
-    return this.allToolDefs.length;
+    return this.visibleToolDefs().length;
   }
 
   /**
    * Get all registered tool names
    */
   getAllToolNames(): string[] {
-    return this.allToolDefs.map(t => t.name);
+    return this.visibleToolDefs().map(t => t.name);
+  }
+
+  getToolProfile(): ToolProfile {
+    return this.profile;
+  }
+
+  private visibleToolDefs(): Tool[] {
+    return this.allToolDefs.filter((tool) => this.isToolVisible(tool.name));
+  }
+
+  private isToolVisible(name: string): boolean {
+    const tool = this.allToolDefs.find((item) => item.name === name);
+    if (!tool) return false;
+    const category = ((tool as any)._meta?.labels?.category || '').toString();
+    const source = ((tool as any)._meta?.labels?.source || '').toString();
+    const isCurated = category === 'agent-workspace' || source === 'curated-agent-workspace';
+    if (this.profile === 'curated') return isCurated;
+    if (this.profile === 'raw') return !isCurated;
+    return true;
   }
 }
 
 // All tool registration is handled via the ToolRegistry class above.
+
+function readToolProfile(): ToolProfile {
+  const value = (process.env.GHL_TOOL_PROFILE || 'full').toLowerCase();
+  if (value === 'curated' || value === 'raw' || value === 'full') return value;
+  process.stderr.write(`[Registry] Unknown GHL_TOOL_PROFILE=${value}; using full.\n`);
+  return 'full';
+}

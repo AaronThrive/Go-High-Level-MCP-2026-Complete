@@ -23,6 +23,22 @@ Run these from the repo root.
 | `npm run tools:configure` | Print a stdio MCP client config snippet. |
 | `npm run tools:update-api` | Run the full official API refresh pipeline. |
 
+## Tool Profiles
+
+The built registry supports `GHL_TOOL_PROFILE`:
+
+- `full` - default, all raw endpoint tools plus curated agent workflow tools.
+- `curated` - only the high-level `agent-workspace` tools designed for chat CRM work and confirmation queues.
+- `raw` - the endpoint-level tools without the curated workflow layer.
+
+Examples:
+
+```bash
+GHL_TOOL_PROFILE=curated npm run tools:list
+GHL_TOOL_PROFILE=curated npm run start:stdio
+GHL_TOOL_PROFILE=raw npm run start:http
+```
+
 ## Tooling Map
 
 - [CLI Commands](tooling/cli-commands.md) covers server, scanner, generator, CI, and smoke commands.

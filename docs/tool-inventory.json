@@ -13030,6 +13030,466 @@
       "source": "local-tool-module"
     },
     {
+      "name": "crm_list_workspaces",
+      "module": "agentWorkspace",
+      "description": "List the high-level CRM workspaces and the workflow tools agents should prefer before using raw API endpoints.",
+      "category": "agent-workspace",
+      "access": "read",
+      "destructive": false,
+      "readOnly": true,
+      "idempotent": true,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_contact_workspace",
+      "module": "agentWorkspace",
+      "description": "Gather the read-side context for a single contact workspace: profile, activity, opportunities, and tasks.",
+      "category": "agent-workspace",
+      "access": "read",
+      "destructive": false,
+      "readOnly": true,
+      "idempotent": true,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_contact_update",
+      "module": "agentWorkspace",
+      "description": "Prepare a confirmation-gated contact update with duplicate checks, notes, tags, and follow-up task options.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_contact_note",
+      "module": "agentWorkspace",
+      "description": "Prepare an internal contact note, staged for confirmation before writing to GHL.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "contactId",
+        "body"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_contact_task",
+      "module": "agentWorkspace",
+      "description": "Prepare a follow-up task for a contact with owner, due date, and notes.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "contactId",
+        "title"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_lead_intake",
+      "module": "agentWorkspace",
+      "description": "Normalize a new lead, check for duplicates, prepare contact upsert, opportunity creation, assignment, and workflow enrollment.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_find_unworked_leads",
+      "module": "agentWorkspace",
+      "description": "Find recent form leads and contact records that still need first-touch follow-up.",
+      "category": "agent-workspace",
+      "access": "read",
+      "destructive": false,
+      "readOnly": true,
+      "idempotent": true,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_lead_assignment",
+      "module": "agentWorkspace",
+      "description": "Prepare a lead owner assignment and optional first-touch task.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "contactId",
+        "ownerId"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_conversation_workspace",
+      "module": "agentWorkspace",
+      "description": "Gather conversation threads, recent messages, and optional contact context for reply drafting.",
+      "category": "agent-workspace",
+      "access": "read",
+      "destructive": false,
+      "readOnly": true,
+      "idempotent": true,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_conversation_reply",
+      "module": "agentWorkspace",
+      "description": "Prepare an SMS or email reply with thread context and confirmation before any outbound message is sent.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "contactId",
+        "message"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_conversation_status",
+      "module": "agentWorkspace",
+      "description": "Prepare a conversation status update, such as marking a thread read, unread, open, or closed.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "conversationId",
+        "status"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_pipeline_workspace",
+      "module": "agentWorkspace",
+      "description": "Gather pipeline, opportunity, and stale-deal context for a pipeline board.",
+      "category": "agent-workspace",
+      "access": "read",
+      "destructive": false,
+      "readOnly": true,
+      "idempotent": true,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_opportunity_update",
+      "module": "agentWorkspace",
+      "description": "Prepare an opportunity create/update/status move with contact note and next task options.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_pipeline_follow_up",
+      "module": "agentWorkspace",
+      "description": "Prepare the next action for a stale or active opportunity: task, note, owner, stage, and optional message.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_appointment_workspace",
+      "module": "agentWorkspace",
+      "description": "Gather calendars, availability, and appointment context before booking or rescheduling.",
+      "category": "agent-workspace",
+      "access": "read",
+      "destructive": false,
+      "readOnly": true,
+      "idempotent": true,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_appointment_booking",
+      "module": "agentWorkspace",
+      "description": "Prepare appointment booking or reschedule actions after availability has been checked.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "contactId",
+        "calendarId",
+        "startTime"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_appointment_reschedule",
+      "module": "agentWorkspace",
+      "description": "Prepare a reschedule action with availability check and optional contact notification.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "appointmentId",
+        "calendarId",
+        "startTime"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_automation_workspace",
+      "module": "agentWorkspace",
+      "description": "Gather campaigns, workflows, scheduled messages, and enrollment context.",
+      "category": "agent-workspace",
+      "access": "read",
+      "destructive": false,
+      "readOnly": true,
+      "idempotent": true,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_automation_enrollment",
+      "module": "agentWorkspace",
+      "description": "Prepare campaign or workflow enrollment with confirmation and contact context.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "contactId"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_workflow_trigger",
+      "module": "agentWorkspace",
+      "description": "Prepare a direct workflow trigger for a contact with a human-readable reason and confirmation.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "contactId",
+        "workflowId"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_reputation_workspace",
+      "module": "agentWorkspace",
+      "description": "Gather reviews, reputation stats, review requests, and connected platform context.",
+      "category": "agent-workspace",
+      "access": "read",
+      "destructive": false,
+      "readOnly": true,
+      "idempotent": true,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_review_reply",
+      "module": "agentWorkspace",
+      "description": "Prepare a public review reply with confirmation before posting.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "reviewId",
+        "reply"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_review_request",
+      "module": "agentWorkspace",
+      "description": "Prepare a review request message for a contact, staged before sending.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "contactId"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_ads_workspace",
+      "module": "agentWorkspace",
+      "description": "Gather ads, attribution, funnel, conversion, and setup health reporting.",
+      "category": "agent-workspace",
+      "access": "read",
+      "destructive": false,
+      "readOnly": true,
+      "idempotent": true,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_ad_campaign_status",
+      "module": "agentWorkspace",
+      "description": "Prepare a paid campaign pause/resume/status change with explicit confirmation.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "platform",
+        "campaignId",
+        "status"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_billing_workspace",
+      "module": "agentWorkspace",
+      "description": "Gather invoices, estimates, orders, transactions, subscriptions, products, and coupons.",
+      "category": "agent-workspace",
+      "access": "read",
+      "destructive": false,
+      "readOnly": true,
+      "idempotent": true,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_invoice",
+      "module": "agentWorkspace",
+      "description": "Prepare an invoice create/send flow with confirmation before creating or sending billing records.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "contactId"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_payment_record",
+      "module": "agentWorkspace",
+      "description": "Prepare an order payment record or invoice payment action with confirmation.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_agency_admin_workspace",
+      "module": "agentWorkspace",
+      "description": "Gather locations, users, snapshots, phone numbers, media, and setup health context for an agency account.",
+      "category": "agent-workspace",
+      "access": "read",
+      "destructive": false,
+      "readOnly": true,
+      "idempotent": true,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_location_health_check",
+      "module": "agentWorkspace",
+      "description": "Prepare a read-only setup audit covering contacts, users, calendars, phone, custom fields, workflows, ads, and billing readiness.",
+      "category": "agent-workspace",
+      "access": "read",
+      "destructive": false,
+      "readOnly": true,
+      "idempotent": true,
+      "required": [],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_snapshot_rollout",
+      "module": "agentWorkspace",
+      "description": "Prepare a snapshot rollout to one or more subaccounts with status checks and explicit confirmation.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "snapshotId",
+        "locationIds"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
+      "name": "crm_prepare_user_invite",
+      "module": "agentWorkspace",
+      "description": "Prepare a user invite or user update for a location with confirmation.",
+      "category": "agent-workspace",
+      "access": "write",
+      "destructive": false,
+      "readOnly": false,
+      "idempotent": false,
+      "required": [
+        "email"
+      ],
+      "scopes": [],
+      "source": "curated-agent-workspace"
+    },
+    {
       "name": "ghl_create_workflow",
       "module": "workflowBuilder",
       "description": "Create a new GHL workflow with optional trigger and actions. Actions are chained automatically via next/parentKey unless you provide explicit linkage (for branching). Returns the created workflow with ID, status, and action details. Trigger types: contact_tag, contact_created, form_submission, customer_reply, appointment, inbound_webhook, payment_received, etc. Action types: sms, email, add_contact_tag, wait, if_else, webhook, create_opportunity, custom_code, etc.",

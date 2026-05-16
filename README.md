@@ -7,7 +7,7 @@ Model Context Protocol server for GoHighLevel. It exposes GHL API operations as 
 - Official GHL endpoints parsed: `576`
 - Official endpoint coverage: `576 / 576`
 - Generated official endpoint tools: `238`
-- MCP tools in registry: `802`
+- MCP tools in registry: `834` (`802` raw API tools plus `32` curated agent workflow tools)
 - Local-only endpoint references tracked for review: `253`
 - Daily GitHub Actions refresh opens a PR when the official GHL API docs change.
 
@@ -43,6 +43,22 @@ npx ghl-mcp test-tool search_contacts '{"locationId":"your_location_id","pageLim
 
 See `docs/TOOLING.md` for the full tooling map.
 
+## Agent Tool Profiles
+
+By default, the server exposes the full tool surface: raw endpoint tools plus the curated CRM workflow layer. Agents that work better with fewer, higher-level actions can use:
+
+```bash
+GHL_TOOL_PROFILE=curated npm run start:stdio
+```
+
+Profiles:
+
+- `full` - default; exposes all `834` tools.
+- `curated` - exposes only the `32` agent workspace tools, such as `crm_prepare_lead_intake`, `crm_prepare_conversation_reply`, `crm_prepare_appointment_booking`, and `crm_location_health_check`.
+- `raw` - exposes only the original `802` endpoint-level tools.
+
+The curated tools return structured confirmation queues for writes. They stage the exact raw tool calls an agent should execute after the user confirms, instead of making outbound messages, billing, workflow enrollment, stage moves, or snapshot pushes feel like one ambiguous API call.
+
 ## Recipes And Agent Starters
 
 The `examples/` directory turns the tool surface into practical MCP workflows:
@@ -58,6 +74,8 @@ Recipes use real MCP tool names and include confirmation points for actions like
 `mcp-apps/` contains companion MCP Apps for hosts that support interactive MCP resources. They run as a separate app server so the core MCP API server stays lean.
 
 MCP Apps require Node 20+ because they use `@modelcontextprotocol/ext-apps`.
+
+The apps are wired to the curated CRM workflow tools first, so buttons like "Prepare lead intake," "Prepare booking," and "Prepare snapshot rollout" produce confirmation-gated action plans for ChatGPT, Claude, or another MCP host.
 
 ```bash
 npm run build

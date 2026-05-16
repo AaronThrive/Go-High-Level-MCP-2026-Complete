@@ -20,6 +20,8 @@ Legacy aliases from the first prototype still work: `show_ghl_contact_360_app`, 
 
 All apps are registered as MCP tools linked to the shared `ui://ghl-mcp-apps/app.html` resource.
 
+The app actions now point at the main server's curated CRM workflow tools where possible. Those tools stage confirmation queues for writes, so the UI can ask an agent to prepare a lead intake, appointment booking, review reply, invoice, or snapshot rollout without immediately mutating GHL data.
+
 ## Setup
 
 From the repo root:
@@ -103,3 +105,5 @@ Example stdio entry:
 ```
 
 Use this alongside the main `ghl` MCP server entry when a host supports MCP Apps/resources.
+
+For agent-first usage, run the main MCP server with `GHL_TOOL_PROFILE=curated` so the host sees the 32 high-level workflow tools instead of the full raw endpoint catalog.

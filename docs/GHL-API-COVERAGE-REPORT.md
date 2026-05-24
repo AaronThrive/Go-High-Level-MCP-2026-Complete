@@ -10,7 +10,7 @@ Generated from official GHL docs commit: 192cd68
 - Docs tag/description: `192cd68`
 - Official endpoint references parsed: 576
 - Local endpoint references parsed: 833
-- Local TypeScript files scanned: 58
+- Local TypeScript files scanned: 59
 
 ## Coverage Summary
 

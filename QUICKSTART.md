@@ -92,3 +92,5 @@ npm run apps:preview
 ```
 
 Open `http://localhost:3001/preview`.
+
+HTTP deployments: see [HTTP security](docs/HTTP-SECURITY.md) for local binding, Docker, allowed origins, and bearer-token configuration.

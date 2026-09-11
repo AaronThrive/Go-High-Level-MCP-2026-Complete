@@ -11,9 +11,6 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const command = args[0] || (process.stdin.isTTY ? 'shell' : 'help');
 
-loadDotEnv();
-if (process.env.GHL_ENV_FILE) loadEnvFile(resolve(process.env.GHL_ENV_FILE), true);
-
 const commands = {
   help,
   version,
@@ -513,6 +510,10 @@ async function executeToolCommand(name, argv, context = {}) {
     const registry = await createToolRegistry(readGhlConfig());
     const result = await registry.callTool(name, toolArgs);
     if (result === undefined) throw new Error(`Tool is not visible in the ${getToolProfile()} profile`);
+    if (result?.isError === true || result?.success === false || result?.ok === false) {
+      const detail = result.error?.message || result.error || result.content?.find(item => item.type === 'text')?.text || 'Tool reported failure';
+      throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
+    }
     if (options.resultOnly || context.legacyAlias) {
       printJson(result, options);
       return;
@@ -791,7 +792,10 @@ function parseOptions(argv) {
     if (item === '--json') options.json = true;
     if (item === '--compact') options.compact = true;
     if (item === '--result-only') options.resultOnly = true;
-    if (item === '--confirm') options.confirm = true;
+    if (item === '--confirm') {
+      if (inlineValue !== undefined) throw new Error('Use bare --confirm to authorize a write; values are not accepted');
+      options.confirm = true;
+    }
     if (item === '--dry-run') options.dryRun = true;
     if (item === '--stdin') options.stdin = true;
     if (item === '--names-only') options.namesOnly = true;
@@ -835,7 +839,6 @@ const TOOL_VALUE_OPTIONS = new Set([
 ]);
 
 function applyRuntimeOptions(options) {
-  if (options.envFile) loadEnvFile(resolve(process.cwd(), options.envFile), true);
   if (options.profile) {
     if (!['curated', 'stable', 'full', 'official', 'raw'].includes(options.profile)) {
       fail('Supported profiles: curated, stable, full, official, raw');
@@ -959,7 +962,10 @@ function readInputFile(path) {
 }
 
 function mergeToolInput(target, value) {
-  Object.assign(target, value);
+  for (const key of Object.keys(value)) {
+    if (['__proto__', 'prototype', 'constructor'].includes(key)) throw new Error(`Unsafe input property: ${key}`);
+    target[key] = value[key];
+  }
 }
 
 function resolveSchemaProperty(requestedName, properties) {
@@ -1150,7 +1156,12 @@ function failToolCall(name, error, options, details = {}) {
 }
 
 function sanitizeErrorMessage(error) {
-  return String(error?.message || error || 'Unknown error')
+  let message = String(error?.message || error || 'Unknown error');
+  for (const key of ['GHL_API_KEY', 'GHL_MCP_AUTH_TOKEN']) {
+    const secret = process.env[key];
+    if (secret) message = message.split(secret).join('[REDACTED]');
+  }
+  return message
     .replace(/(Bearer\s+)[A-Za-z0-9._~+\/-]+/gi, '$1[REDACTED]')
     .replace(/((?:api[_-]?key|access[_-]?token|authorization)["']?\s*[:=]\s*["']?)[^"'\s,}]+/gi, '$1[REDACTED]');
 }
@@ -1452,8 +1463,23 @@ function fail(message) {
   process.exit(1);
 }
 
-if (!commands[command]) {
-  await executeToolCommand(command, args.slice(1), { direct: true });
-} else {
-  await commands[command](args.slice(1));
+try {
+  // Explicit profiles replace account context instead of overlaying a prior account.
+  const startupOptions = parseOptions(args.slice(1));
+  const envFile = startupOptions.envFile || process.env.GHL_ENV_FILE;
+  if (envFile) {
+    for (const key of ['GHL_API_KEY', 'GHL_LOCATION_ID', 'GHL_BASE_URL', 'GHL_API_VERSION', 'GHL_API_GENERATION', 'GHL_USER_TYPE', 'GHL_TOOL_PROFILE']) delete process.env[key];
+    loadEnvFile(resolve(process.cwd(), envFile), true);
+    // Dependencies that use dotenv must not refill missing account values.
+    for (const key of ['GHL_API_KEY', 'GHL_LOCATION_ID', 'GHL_BASE_URL', 'GHL_API_VERSION', 'GHL_API_GENERATION', 'GHL_USER_TYPE', 'GHL_TOOL_PROFILE']) process.env[key] ??= '';
+  } else {
+    loadDotEnv();
+  }
+  if (!Object.hasOwn(commands, command)) {
+    await executeToolCommand(command, args.slice(1), { direct: true });
+  } else {
+    await commands[command](args.slice(1));
+  }
+} catch (error) {
+  failToolCall(command, error, {});
 }

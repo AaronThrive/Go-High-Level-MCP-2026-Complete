@@ -3,7 +3,7 @@
  */
 
 import express from 'express';
-import cors from 'cors';
+import { createHttpApp, resolveBindHost, describeBinding } from '../scripts/http-security.cjs';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import {
@@ -30,29 +30,10 @@ class GHLMCPHttpServer {
 
   constructor() {
     this.port = parseInt(process.env.PORT || process.env.MCP_SERVER_PORT || '8000', 10);
-    this.app = express();
-    this.setupExpress();
+    this.app = createHttpApp();
     this.ghlClient = this.initializeGHLClient();
     this.registry = new ToolRegistry(this.ghlClient);
     this.setupRoutes();
-  }
-
-  private setupExpress(): void {
-    this.app.use(cors({
-      origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        if (/^https?:\/\/localhost(:\d+)?$/.test(origin) ||
-            origin === 'https://chatgpt.com' ||
-            origin === 'https://chat.openai.com') {
-          return callback(null, true);
-        }
-        callback(new Error('CORS not allowed'));
-      },
-      methods: ['GET', 'POST', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-      credentials: true
-    }));
-    this.app.use(express.json());
   }
 
   private initializeGHLClient(): GHLApiClient {
@@ -184,7 +165,9 @@ class GHLMCPHttpServer {
 
   async start(): Promise<void> {
     await this.ghlClient.testConnection();
-    this.app.listen(this.port, '0.0.0.0', () => {
+    const bindHost = resolveBindHost();
+    this.app.listen(this.port, bindHost, () => {
+      console.log(describeBinding(bindHost, this.port));
       console.log(`GoHighLevel MCP legacy SSE server listening on ${this.port}`);
     });
   }

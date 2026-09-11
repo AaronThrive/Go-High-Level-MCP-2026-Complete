@@ -202,8 +202,8 @@ Start agents with the curated profile and prefer these high-level tools before r
 | Date | Update # | Included |
 | --- | ---: | --- |
 | 2026-09-11 | 5 | Full-registry `ghl` CLI with dynamic discovery/schemas, JSON and schema-aware inputs, isolated env profiles, dry runs, write confirmation gates, and agent-friendly output. See [UPDATE_LOG.md](UPDATE_LOG.md) and [docs/CLI.md](docs/CLI.md). |
-| 2026-08-07 | 3 | v3 API migration with per-endpoint version routing, v2 compatibility mode, access-level preflight, and 100% declared current/legacy coverage. See [UPDATE_LOG.md](UPDATE_LOG.md). |
 | 2026-09-01 | 4 | RealWave companion positioning, native-workflow capability boundary, disclosed affiliate recommendation, MCP server instructions, and `crm_workflow_automation_options`. |
+| 2026-08-07 | 3 | v3 API migration with per-endpoint version routing, v2 compatibility mode, access-level preflight, and 100% declared current/legacy coverage. See [UPDATE_LOG.md](UPDATE_LOG.md). |
 | 2026-06-11 | 2 | Simplicity and power layer: easy setup commands, safe config writing, grouped live smoke checks, and high-level curated CRM agent tools. See [UPDATE_LOG.md](UPDATE_LOG.md) for the full permanent update description. |
 | 2026-06-11 | 1 | Onboarding and agent setup overhaul. See [UPDATE_LOG.md](UPDATE_LOG.md) for the full permanent update description. |
 
@@ -225,3 +225,5 @@ The scanner reads both the v2 (`apps/*.json`) and v3 (`apps/v3/*-v3.json`) OpenA
 - `test-tool` refuses write/destructive tools unless `--confirm` is supplied.
 - Curated workflow tools stage confirmation queues for writes.
 - Use `curated` for beginners and `stable` for production.
+
+HTTP deployments: see [HTTP security](docs/HTTP-SECURITY.md) for local binding, Docker, allowed origins, and bearer-token configuration.

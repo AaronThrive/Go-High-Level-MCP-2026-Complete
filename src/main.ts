@@ -5,7 +5,7 @@
  */
 
 import express from 'express';
-import cors from 'cors';
+import { createHttpApp, resolveBindHost, describeBinding } from '../scripts/http-security.cjs';
 import * as dotenv from 'dotenv';
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -79,22 +79,7 @@ async function main() {
 
   await ghlClient.testConnection();
 
-  const app = express();
-  app.use(cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (/^https?:\/\/localhost(:\d+)?$/.test(origin) ||
-          origin === 'https://chatgpt.com' ||
-          origin === 'https://chat.openai.com') {
-        return callback(null, true);
-      }
-      callback(new Error('CORS not allowed'));
-    },
-    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'mcp-session-id', 'x-ghl-access-token', 'x-ghl-location-id', 'x-ghl-user-type'],
-    credentials: true,
-  }));
-  app.use(express.json());
+  const app = createHttpApp();
   app.use((req, _res, next) => {
     log('debug', `${req.method} ${req.path}`, { ip: req.ip });
     next();
@@ -223,11 +208,13 @@ async function main() {
     }
   });
 
-  app.listen(port, '0.0.0.0', () => {
+  const bindHost = resolveBindHost();
+  app.listen(port, bindHost, () => {
+    console.log(describeBinding(bindHost, port));
     console.log('GoHighLevel MCP Server v2.0');
-    console.log(`Server: http://0.0.0.0:${port}`);
-    console.log(`Streamable HTTP: http://0.0.0.0:${port}/mcp`);
-    console.log(`Legacy SSE: http://0.0.0.0:${port}/sse`);
+    console.log(`Server: http://${bindHost}:${port}`);
+    console.log(`Streamable HTTP: http://${bindHost}:${port}/mcp`);
+    console.log(`Legacy SSE: http://${bindHost}:${port}/sse`);
     console.log(`Tools: ${toolCount}`);
   });
 

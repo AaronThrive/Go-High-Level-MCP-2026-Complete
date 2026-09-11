@@ -32,7 +32,7 @@ GHL_API_VERSION=v3
 GHL_API_GENERATION=v3
 ```
 
-You can also set `GHL_ENV_FILE` once in a wrapper or shell profile. An explicit `--env-file` or `GHL_ENV_FILE` is authoritative for that invocation, which helps prevent credentials from one GHL location being reused with another location by accident.
+You can also set `GHL_ENV_FILE` once in a wrapper or shell profile. An explicit `--env-file` takes precedence over `GHL_ENV_FILE`. Either replaces the inherited account token, location, base URL, API version/generation, user type, and tool profile. Missing credentials stay missing; they are not filled from the repository or another account. Explicit command-line runtime options apply afterward.
 
 Never commit a credential profile. Prefer mode `0600`, and do not pass tokens as command-line arguments because shell history can retain them.
 
@@ -103,7 +103,7 @@ The CLI validates required arguments before contacting GHL. `GHL_LOCATION_ID` is
 
 ## Safety model
 
-Read-only tools run without a confirmation flag. Every write or delete tool is refused unless the same invocation includes `--confirm`.
+Read-only tools run without a confirmation flag. Every write or delete tool is refused unless the same invocation includes the bare `--confirm` flag. Forms such as `--confirm=false` and `--confirm=true` are rejected.
 
 ```bash
 # Resolves and validates arguments but never contacts GHL.

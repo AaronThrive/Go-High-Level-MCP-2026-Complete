@@ -28,3 +28,17 @@ describe('createPerRequestConfig', () => {
     expect(createPerRequestConfig(base, 'request-token', 'request-location', 'Agency').userType).toBeUndefined();
   });
 });
+
+describe('request override boundary', () => {
+  const { resolveRequestConfig } = require('../src/request-config.js');
+  it.each([
+    {'x-ghl-access-token':'token'}, {'x-ghl-location-id':'location'},
+    {'x-ghl-user-type':'Company'}, {'x-ghl-access-token':'','x-ghl-location-id':'location'},
+    {'x-ghl-access-token':['token'],'x-ghl-location-id':'location'},
+    {'x-ghl-access-token':'token','x-ghl-location-id':'location','x-ghl-user-type':'invalid'},
+  ])('rejects incomplete or malformed context %j', headers => { expect(()=>resolveRequestConfig(base,headers)).toThrow(); });
+  it('uses the default only when no override is supplied', () => { expect(resolveRequestConfig(base,{})).toBe(base); });
+  it('binds the replacement token and location together', () => {
+    expect(resolveRequestConfig(base,{'x-ghl-access-token':'new-token','x-ghl-location-id':'new-location'})).toMatchObject({accessToken:'new-token',locationId:'new-location',userType:undefined});
+  });
+});

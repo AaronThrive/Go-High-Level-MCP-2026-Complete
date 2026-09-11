@@ -4,16 +4,16 @@
  * Wraps the existing GHLApiClient with:
  * - Connection pooling (HTTP keep-alive)
  * - TTL cache for read-only responses
- * - Retry with exponential backoff (429/5xx)
+ * - GET-only retry with exponential backoff (429/5xx)
  * - Rate limit header tracking
  * - Structured error responses
  */
 
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import type { AxiosResponse } from 'axios';
 import * as http from 'http';
 import * as https from 'https';
 import { GHLApiClient } from './clients/ghl-api-client.js';
-import { GHLConfig, GHLApiResponse, GHLErrorResponse } from './types/ghl-types.js';
+import { GHLConfig, GHLApiResponse } from './types/ghl-types.js';
 
 // ─── TTL Cache ──────────────────────────────────────────────
 
@@ -33,9 +33,7 @@ class TTLCache {
     this.defaultTTL = defaultTTLMs;
     this.maxSize = maxSize;
 
-    // Periodic cleanup every 60s
-    const interval = setInterval(() => this.cleanup(), 60_000);
-    interval.unref();
+    // Expire lazily: per-request clients must not leave lifetime-extending timers.
   }
 
   get<T>(key: string): T | undefined {
@@ -51,7 +49,8 @@ class TTLCache {
   }
 
   set<T>(key: string, data: T, ttlMs?: number): void {
-    // Evict oldest if at capacity
+    if (this.store.size >= this.maxSize) this.cleanup();
+    // Evict oldest if still at capacity
     if (this.store.size >= this.maxSize) {
       const oldest = this.store.keys().next().value;
       if (oldest !== undefined) this.store.delete(oldest);
@@ -105,31 +104,14 @@ interface RateLimitState {
 export class EnhancedGHLClient extends GHLApiClient {
   private cache: TTLCache;
   private rateLimit: RateLimitState = { remaining: Infinity, limit: Infinity, resetAt: 0 };
-  private enhancedAxios: AxiosInstance;
 
   constructor(config: GHLConfig) {
     super(config);
-    const normalizedConfig = this.getConfig();
-
-    // Create enhanced axios instance with connection pooling
-    const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 10, keepAliveMsecs: 30_000 });
-    const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 10, keepAliveMsecs: 30_000 });
-
-    this.enhancedAxios = axios.create({
-      baseURL: normalizedConfig.baseUrl,
-      headers: {
-        'Authorization': `Bearer ${normalizedConfig.accessToken}`,
-        'Version': normalizedConfig.version,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      timeout: 30_000,
-      httpAgent,
-      httpsAgent,
-    });
-
+    // Configure the actual instance used by the base client's request methods.
+    this.axiosInstance.defaults.httpAgent = new http.Agent({ keepAlive: true, maxSockets: 10 });
+    this.axiosInstance.defaults.httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 10 });
     // Track rate limit headers
-    this.enhancedAxios.interceptors.response.use(
+    this.axiosInstance.interceptors.response.use(
       (response) => {
         this.trackRateLimit(response);
         return response;
@@ -181,13 +163,12 @@ export class EnhancedGHLClient extends GHLApiClient {
     }
 
     // Non-GET: execute and invalidate related caches
-    const result = await this.makeRequestWithRetry<T>(method, path, body, options);
-
-    // Invalidate cache for the resource path
-    const basePath = path.split('?')[0].split('/').slice(0, 3).join('/');
-    this.cache.invalidate(basePath);
-
-    return result;
+    // A failed write can have committed upstream; do not serve stale cached reads.
+    try {
+      return await this.makeRequestWithRetry<T>(method, path, body, options);
+    } finally {
+      this.cache.invalidate();
+    }
   }
 
   private async makeRequestWithRetry<T>(
@@ -218,8 +199,8 @@ export class EnhancedGHLClient extends GHLApiClient {
     } catch (err: any) {
       const status = err.response?.status || (err.message?.match(/\((\d+)\)/)?.[1] && parseInt(err.message.match(/\((\d+)\)/)[1]));
 
-      // Retry on 429 (rate limit) and 5xx (server errors)
-      if (attempt < MAX_RETRIES && (status === 429 || (status >= 500 && status < 600))) {
+      // Never replay writes after ambiguous failures without endpoint-specific deduplication.
+      if (method === 'GET' && attempt < MAX_RETRIES && (status === 429 || (status >= 500 && status < 600))) {
         const delay = BASE_DELAY * Math.pow(2, attempt) + Math.random() * 500;
         process.stderr.write(`[GHL] Retry ${attempt + 1}/${MAX_RETRIES} for ${method} ${path} (status ${status}, delay ${Math.round(delay)}ms)\n`);
         await new Promise(r => setTimeout(r, delay));
@@ -228,6 +209,12 @@ export class EnhancedGHLClient extends GHLApiClient {
 
       throw err;
     }
+  }
+
+  updateAccessToken(newToken: string): void {
+    super.updateAccessToken(newToken);
+    this.cache.invalidate();
+    this.rateLimit = { remaining: Infinity, limit: Infinity, resetAt: 0 };
   }
 
   getCacheStats() {

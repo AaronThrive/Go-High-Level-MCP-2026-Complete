@@ -24,3 +24,20 @@ export function createPerRequestConfig(
     userType,
   };
 }
+
+export class RequestConfigError extends Error {}
+
+/** Reject incomplete overrides rather than silently using the server account. */
+export function resolveRequestConfig(base: GHLConfig, headers: Record<string, unknown>): GHLConfig {
+  const token = headers['x-ghl-access-token'];
+  const location = headers['x-ghl-location-id'];
+  const userType = headers['x-ghl-user-type'];
+  if (token === undefined && location === undefined && userType === undefined) return base;
+  if (typeof token !== 'string' || !token.trim() || typeof location !== 'string' || !location.trim()) {
+    throw new RequestConfigError('Supply both x-ghl-access-token and x-ghl-location-id as non-empty headers');
+  }
+  if (userType !== undefined && userType !== 'Location' && userType !== 'Company') {
+    throw new RequestConfigError('x-ghl-user-type must be Location or Company');
+  }
+  return createPerRequestConfig(base, token.trim(), location.trim(), userType);
+}

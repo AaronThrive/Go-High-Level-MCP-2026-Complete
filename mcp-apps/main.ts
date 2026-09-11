@@ -22,6 +22,13 @@ async function startHttpServer(factory: () => McpServer): Promise<void> {
   const { createHttpApp, resolveBindHost, describeBinding } = createRequire(import.meta.url)(join(packageRoot, '..', 'scripts', 'http-security.cjs')) as typeof HttpSecurity;
   const bindHost = resolveBindHost();
   const app = createHttpApp();
+  app.use((req, res, next) => {
+    if (['x-ghl-access-token', 'x-ghl-location-id', 'x-ghl-user-type'].some(key => req.headers[key] !== undefined)) {
+      res.status(400).json({ error: 'MCP Apps uses its configured account; request account overrides are not supported' });
+      return;
+    }
+    next();
+  });
 
   app.get('/', (_req, res) => {
     res.redirect('/preview');

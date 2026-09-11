@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { validateToolInput } from './tool-schema.cjs';
+import { toolFailed, toolFailureMessage } from './tool-results.cjs';
 
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -481,7 +483,7 @@ async function executeToolCommand(name, argv, context = {}) {
   let toolArgs;
   try {
     toolArgs = resolveToolArguments(argv, schema, options, name);
-    validateToolArguments(name, toolArgs, schema);
+    validateToolInput(name, toolArgs, schema);
   } catch (error) {
     failToolCall(name, error, options);
   }
@@ -510,10 +512,7 @@ async function executeToolCommand(name, argv, context = {}) {
     const registry = await createToolRegistry(readGhlConfig());
     const result = await registry.callTool(name, toolArgs);
     if (result === undefined) throw new Error(`Tool is not visible in the ${getToolProfile()} profile`);
-    if (result?.isError === true || result?.success === false || result?.ok === false) {
-      const detail = result.error?.message || result.error || result.content?.find(item => item.type === 'text')?.text || 'Tool reported failure';
-      throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
-    }
+    if (toolFailed(result)) throw new Error(toolFailureMessage(result));
     if (options.resultOnly || context.legacyAlias) {
       printJson(result, options);
       return;
@@ -1051,52 +1050,6 @@ function applySetExpression(target, expression) {
     cursor = cursor[segment];
   }
   cursor[segments.at(-1)] = value;
-}
-
-function validateToolArguments(name, toolArgs, schema) {
-  const missing = (schema.required || []).filter((property) => !Object.prototype.hasOwnProperty.call(toolArgs, property));
-  if (missing.length) {
-    throw new Error(`Missing required argument${missing.length === 1 ? '' : 's'} for ${name}: ${missing.join(', ')}`);
-  }
-  for (const [property, value] of Object.entries(toolArgs)) {
-    const propertySchema = schema.properties?.[property];
-    if (!propertySchema) {
-      if (schema.additionalProperties === false) throw new Error(`Unknown argument for ${name}: ${property}`);
-      continue;
-    }
-    validateSchemaValue(property, value, propertySchema);
-  }
-}
-
-function validateSchemaValue(path, value, schema = {}) {
-  if (schema.oneOf) {
-    const matches = schema.oneOf.some((candidate) => {
-      try {
-        validateSchemaValue(path, value, candidate);
-        return true;
-      } catch {
-        return false;
-      }
-    });
-    if (!matches) throw new Error(`Argument ${path} does not match any supported schema variant`);
-    return;
-  }
-  if (Array.isArray(schema.enum) && !schema.enum.some((candidate) => Object.is(candidate, value))) {
-    throw new Error(`Argument ${path} must be one of: ${schema.enum.map(String).join(', ')}`);
-  }
-  if (schema.type === 'string' && typeof value !== 'string') throw new Error(`Argument ${path} must be a string`);
-  if (schema.type === 'boolean' && typeof value !== 'boolean') throw new Error(`Argument ${path} must be a boolean`);
-  if (schema.type === 'number' && (typeof value !== 'number' || !Number.isFinite(value))) throw new Error(`Argument ${path} must be a number`);
-  if (schema.type === 'integer' && (typeof value !== 'number' || !Number.isInteger(value))) throw new Error(`Argument ${path} must be an integer`);
-  if (schema.type === 'object' && (!value || typeof value !== 'object' || Array.isArray(value))) throw new Error(`Argument ${path} must be an object`);
-  if (schema.type === 'array') {
-    if (!Array.isArray(value)) throw new Error(`Argument ${path} must be an array`);
-    value.forEach((item, index) => validateSchemaValue(`${path}[${index}]`, item, schema.items || {}));
-  }
-  if (typeof value === 'number') {
-    if (schema.minimum !== undefined && value < schema.minimum) throw new Error(`Argument ${path} must be at least ${schema.minimum}`);
-    if (schema.maximum !== undefined && value > schema.maximum) throw new Error(`Argument ${path} must be at most ${schema.maximum}`);
-  }
 }
 
 function schemaTypeLabel(schema = {}) {

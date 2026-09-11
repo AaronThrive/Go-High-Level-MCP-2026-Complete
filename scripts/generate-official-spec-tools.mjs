@@ -47,6 +47,7 @@ const endpoints = missingWithoutGenerated.map((endpoint) => {
     pathParams: getPathParams(endpoint.path),
     queryParams: getParams(endpoint, 'query'),
     requestBodySchema: requestBody?.schema,
+    schemaDefinitions: getSchemaDefinitions(endpoint),
     requestContentType: requestBody?.contentType,
   };
 });
@@ -112,6 +113,7 @@ interface OfficialEndpoint {
     arrayFormat?: 'repeat' | 'comma' | 'space' | 'pipe' | 'tab';
   }>;
   requestBodySchema?: Record<string, unknown>;
+  schemaDefinitions?: Record<string, unknown>;
   requestContentType?: 'application/json' | 'application/x-www-form-urlencoded';
 }
 
@@ -214,6 +216,7 @@ export class OfficialSpecTools {
 
     return {
       type: 'object',
+      ...(endpoint.schemaDefinitions ? { components: { schemas: endpoint.schemaDefinitions } } : {}),
       properties,
       required,
       additionalProperties: true,
@@ -306,7 +309,7 @@ function escapeRegExp(value: string): string {
 
 function sanitizeSchema(schema: Record<string, unknown> | undefined): Record<string, unknown> {
   if (!schema) return {};
-  const allowed = new Set(['type', 'enum', 'items', 'format', 'default', 'minimum', 'maximum', 'minLength', 'maxLength']);
+  const allowed = new Set(['type', 'enum', 'items', 'format', 'default', 'minimum', 'maximum', 'minLength', 'maxLength', '$ref', 'properties', 'required', 'oneOf', 'anyOf', 'allOf', 'additionalProperties', 'nullable', 'pattern', 'minItems', 'maxItems']);
   const clean: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(schema)) {
     if (allowed.has(key)) clean[key] = value;
@@ -472,4 +475,27 @@ function sanitizeGeneratorSchema(schema) {
     if (allowed.has(key)) clean[key] = value;
   }
   return clean;
+}
+
+function getSchemaDefinitions(endpoint) {
+  if (!endpoint.sourceFile?.endsWith('.json')) return undefined;
+  const spec = JSON.parse(readFileSync(join(repoRoot, 'tmp', 'highlevel-api-docs', endpoint.sourceFile), 'utf8'));
+  const operation = getOperation(endpoint);
+  const definitions = {};
+  function visit(value) {
+    if (!value || typeof value !== 'object') return;
+    if (typeof value.$ref === 'string' && value.$ref.startsWith('#/components/schemas/')) {
+      const name = value.$ref.slice('#/components/schemas/'.length).replace(/~1/g, '/').replace(/~0/g, '~');
+      if (!Object.hasOwn(definitions, name)) {
+        const definition = spec.components?.schemas?.[name];
+        if (!definition) throw new Error(`Missing schema ${value.$ref} in ${endpoint.sourceFile}`);
+        definitions[name] = definition;
+        visit(definition);
+      }
+    }
+    for (const child of Object.values(value)) visit(child);
+  }
+  visit(operation?.requestBody);
+  visit(operation?.parameters);
+  return Object.keys(definitions).length ? definitions : undefined;
 }

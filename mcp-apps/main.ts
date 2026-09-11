@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
-import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
+import { createRequire } from 'node:module';
+import type * as HttpSecurity from '../scripts/http-security.cjs';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import cors from 'cors';
-import type { Request, Response } from 'express';
 import { readFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,8 +19,9 @@ async function startStdioServer(factory: () => McpServer): Promise<void> {
 
 async function startHttpServer(factory: () => McpServer): Promise<void> {
   const port = parseInt(process.env.GHL_MCP_APPS_PORT || process.env.PORT || '3001', 10);
-  const app = createMcpExpressApp({ host: '0.0.0.0' });
-  app.use(cors());
+  const { createHttpApp, resolveBindHost, describeBinding } = createRequire(import.meta.url)(join(packageRoot, '..', 'scripts', 'http-security.cjs')) as typeof HttpSecurity;
+  const bindHost = resolveBindHost();
+  const app = createHttpApp();
 
   app.get('/', (_req, res) => {
     res.redirect('/preview');
@@ -44,7 +44,7 @@ async function startHttpServer(factory: () => McpServer): Promise<void> {
     }
   });
 
-  app.all('/mcp', async (req: Request, res: Response) => {
+  app.all('/mcp', async (req, res) => {
     const server = factory();
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
 
@@ -78,7 +78,8 @@ async function startHttpServer(factory: () => McpServer): Promise<void> {
     });
   });
 
-  const httpServer = app.listen(port, '0.0.0.0', () => {
+  const httpServer = app.listen(port, bindHost, () => {
+    console.log(describeBinding(bindHost, port));
     console.log(`GoHighLevel MCP Apps listening at http://localhost:${port}/mcp`);
     console.log(`Browser preview: http://localhost:${port}/preview`);
   });

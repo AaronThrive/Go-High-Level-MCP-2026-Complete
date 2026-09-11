@@ -17,7 +17,8 @@
     "start": "node dist/main.js",
     "start:stdio": "node dist/main.js --stdio",
     "start:http": "node dist/main.js",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json --noEmit",
+    "prebuild": "npm run build --prefix .."
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.2",

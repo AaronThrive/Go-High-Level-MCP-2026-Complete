@@ -707,7 +707,7 @@ export class ConversationTools {
         _meta: {
           labels: {
             category: "conversations",
-            access: "read",
+            access: "write",
             complexity: "simple"
           }
         }

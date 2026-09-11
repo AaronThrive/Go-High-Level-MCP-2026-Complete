@@ -296,7 +296,7 @@ describe('ghl-mcp onboarding CLI', () => {
       '--compact',
     ]);
     expect(enumResult.status).toBe(1);
-    expect(enumResult.stderr).toContain('must be one of');
+    expect(enumResult.stderr).toContain('must be equal to one of');
 
     const numberResult = runCli([
       'search_conversations',
@@ -307,6 +307,6 @@ describe('ghl-mcp onboarding CLI', () => {
       '--compact',
     ]);
     expect(numberResult.status).toBe(1);
-    expect(numberResult.stderr).toContain('must be at most 100');
+    expect(numberResult.stderr).toContain('must be <= 100');
   });
 });

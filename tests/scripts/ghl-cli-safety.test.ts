@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from '@jest/globals';
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -9,6 +9,8 @@ import { spawnSync } from 'node:child_process';
 const root = mkdtempSync(join(tmpdir(), 'ghl-cli-safety-'));
 mkdirSync(join(root, 'scripts'));
 mkdirSync(join(root, 'dist'));
+symlinkSync(join(__dirname, '../../node_modules'), join(root, 'node_modules'));
+for (const file of ['tool-schema.cjs', 'tool-results.cjs']) copyFileSync(join(__dirname, '../../scripts', file), join(root, 'scripts', file));
 copyFileSync(join(__dirname, '../../scripts/ghl-mcp.mjs'), join(root, 'scripts/ghl-mcp.mjs'));
 writeFileSync(join(root, 'package.json'), '{"type":"module"}');
 writeFileSync(join(root, 'dist/enhanced-ghl-client.js'), 'export class EnhancedGHLClient { constructor(config) { this.config = config; } }');

@@ -9,7 +9,10 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ToolAnnotations, Tool } from '@modelcontextprotocol/sdk/types.js';
+import { ToolAnnotations, Tool, CallToolRequestSchema, ListToolsRequestSchema, McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { toMcpResult } from '../scripts/tool-results.cjs';
+import { validateToolInput, ToolInputError } from '../scripts/tool-schema.cjs';
 
 import { GHLApiClient } from './clients/ghl-api-client.js';
 import { ContactTools } from './tools/contact-tools.js';
@@ -104,7 +107,7 @@ function inferAnnotations(toolName: string, meta?: any): ToolAnnotations {
   const access = meta?.labels?.access;
 
   // Read-only operations
-  const isRead = access === 'read' ||
+  const inferredRead =
     name.startsWith('get_') ||
     name.startsWith('search_') ||
     name.startsWith('list_') ||
@@ -120,8 +123,9 @@ function inferAnnotations(toolName: string, meta?: any): ToolAnnotations {
     name.startsWith('generate_invoice_number') ||
     name.startsWith('generate_estimate_number') ||
     name === 'get_timezones' ||
-    name === 'verify_email' ||
-    name === 'live_chat_typing';
+    name === 'verify_email';
+  // Explicit access labels take precedence over name heuristics.
+  const isRead = access ? access === 'read' : inferredRead;
 
   // Destructive operations (DELETE)
   const isDestructive = access === 'delete' ||
@@ -388,47 +392,25 @@ export class ToolRegistry {
    * Register all tools with a McpServer instance
    */
   registerAll(server: McpServer): number {
-    let count = 0;
+    return this.registerHandlers(server.server);
+  }
 
-    for (const tool of this.visibleToolDefs()) {
-      const mod = this.toolToModule.get(tool.name);
-      if (!mod) continue;
-
-      const meta = (tool as any)._meta;
-      const annotations = inferAnnotations(tool.name, meta);
-
+  /** Preserve the catalog's JSON Schemas without a lossy JSON Schema -> Zod conversion. */
+  registerHandlers(server: Server): number {
+    server.registerCapabilities({ tools: {} });
+    server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: this.getAllToolDefinitions() }));
+    server.setRequestHandler(CallToolRequestSchema, async (request) => {
+      const { name, arguments: args } = request.params;
+      if (!this.isToolVisible(name)) throw new McpError(ErrorCode.InvalidParams, `Unknown tool: ${name}`);
       try {
-        server.registerTool(
-          tool.name,
-          {
-            title: annotations.title,
-            description: tool.description || '',
-            annotations,
-            _meta: meta,
-          },
-          async (args: any) => {
-            try {
-              const result = await mod.executeTool(tool.name, args || {});
-              // Normalize result to MCP format
-              const text = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
-              return {
-                content: [{ type: 'text' as const, text }],
-              };
-            } catch (err: any) {
-              return {
-                content: [{ type: 'text' as const, text: `Error executing ${tool.name}: ${err.message}` }],
-                isError: true,
-              };
-            }
-          }
-        );
-        count++;
-      } catch (err: any) {
-        process.stderr.write(`[Registry] Failed to register tool ${tool.name}: ${err.message}\n`);
+        const result = await this.callTool(name, args ?? {});
+        return toMcpResult(result);
+      } catch (error) {
+        if (error instanceof ToolInputError) throw new McpError(ErrorCode.InvalidParams, error.message);
+        return toMcpResult({ success: false, error: error instanceof Error ? error.message : String(error) });
       }
-    }
-
-    return count;
+    });
+    return this.getToolCount();
   }
 
   /**
@@ -438,6 +420,8 @@ export class ToolRegistry {
     const mod = this.toolToModule.get(name);
     if (!mod) return undefined;
     if (!this.isToolVisible(name)) return undefined;
+    const definition = this.allToolDefs.find(tool => tool.name === name)!;
+    validateToolInput(name, args, definition.inputSchema);
     return mod.executeTool(name, args);
   }
 

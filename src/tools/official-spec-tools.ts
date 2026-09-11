@@ -43,6 +43,7 @@ interface OfficialEndpoint {
     arrayFormat?: 'repeat' | 'comma' | 'space' | 'pipe' | 'tab';
   }>;
   requestBodySchema?: Record<string, unknown>;
+  schemaDefinitions?: Record<string, unknown>;
   requestContentType?: 'application/json' | 'application/x-www-form-urlencoded';
 }
 
@@ -145,6 +146,7 @@ export class OfficialSpecTools {
 
     return {
       type: 'object',
+      ...(endpoint.schemaDefinitions ? { components: { schemas: endpoint.schemaDefinitions } } : {}),
       properties,
       required,
       additionalProperties: true,
@@ -237,7 +239,7 @@ function escapeRegExp(value: string): string {
 
 function sanitizeSchema(schema: Record<string, unknown> | undefined): Record<string, unknown> {
   if (!schema) return {};
-  const allowed = new Set(['type', 'enum', 'items', 'format', 'default', 'minimum', 'maximum', 'minLength', 'maxLength']);
+  const allowed = new Set(['type', 'enum', 'items', 'format', 'default', 'minimum', 'maximum', 'minLength', 'maxLength', '$ref', 'properties', 'required', 'oneOf', 'anyOf', 'allOf', 'additionalProperties', 'nullable', 'pattern', 'minItems', 'maxItems']);
   const clean: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(schema)) {
     if (allowed.has(key)) clean[key] = value;

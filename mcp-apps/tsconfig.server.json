@@ -4,7 +4,11 @@
     "noEmit": false,
     "outDir": "dist",
     "declaration": true,
-    "sourceMap": false
+    "sourceMap": false,
+    "rootDir": "."
   },
-  "include": ["server.ts", "main.ts"]
+  "include": [
+    "server.ts",
+    "main.ts"
+  ]
 }

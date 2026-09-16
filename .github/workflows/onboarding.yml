@@ -29,6 +29,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Build MCP Apps
+        run: npm run apps:install && npm run apps:build
+
       - name: Test
         run: npm test
 
@@ -44,9 +47,6 @@ jobs:
           npm run configure:claude
           npm run configure:cursor
           npm run configure:windsurf
-
-      - name: Build MCP Apps
-        run: npm run apps:install && npm run apps:build
 
       - name: Verify package contents
         run: npm pack --dry-run

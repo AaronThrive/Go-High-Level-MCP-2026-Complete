@@ -16,6 +16,7 @@ import { GHLApiClient } from './clients/ghl-api-client.js';
 import { ToolRegistry } from './tool-registry.js';
 import { GHLConfig } from './types/ghl-types.js';
 import { resolveVersion } from './clients/version-router.js';
+import { GHL_MCP_SERVER_INSTRUCTIONS } from './server-instructions.js';
 
 dotenv.config();
 
@@ -27,7 +28,10 @@ class GHLMCPServer {
   constructor() {
     this.server = new Server(
       { name: 'ghl-mcp-server', version: '3.0.0' },
-      { capabilities: { tools: {} } }
+      {
+        capabilities: { tools: {} },
+        instructions: GHL_MCP_SERVER_INSTRUCTIONS,
+      }
     );
     this.ghlClient = this.initializeGHLClient();
     this.registry = new ToolRegistry(this.ghlClient);
@@ -58,36 +62,7 @@ class GHLMCPServer {
   }
 
   private setupHandlers(): void {
-    const allTools = this.registry.getAllToolDefinitions();
-
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      process.stderr.write(`[GHL MCP] Listing ${allTools.length} tools\n`);
-      return { tools: allTools };
-    });
-
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params;
-      process.stderr.write(`[GHL MCP] Executing tool: ${name}\n`);
-
-      try {
-        const result = await this.registry.callTool(name, args || {});
-        if (result === undefined) {
-          throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
-        }
-
-        return {
-          content: [{
-            type: 'text',
-            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2)
-          }]
-        };
-      } catch (error) {
-        if (error instanceof McpError) throw error;
-        const message = error instanceof Error ? error.message : String(error);
-        const code = message.includes('404') ? ErrorCode.InvalidRequest : ErrorCode.InternalError;
-        throw new McpError(code, `Tool execution failed: ${message}`);
-      }
-    });
+    this.registry.registerHandlers(this.server);
   }
 
   private async testGHLConnection(): Promise<void> {

@@ -391,7 +391,7 @@ import { resolveRequestVersion } from './endpoint-version-resolver.js';
  * Handles all API communication with GHL services
  */
 export class GHLApiClient {
-  private axiosInstance: AxiosInstance;
+  protected axiosInstance: AxiosInstance;
   private config: GHLConfig;
 
   constructor(config: GHLConfig) {

@@ -5,7 +5,7 @@
  */
 
 import express from 'express';
-import cors from 'cors';
+import { createHttpApp, resolveBindHost, describeBinding } from '../scripts/http-security.cjs';
 import * as dotenv from 'dotenv';
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -17,7 +17,9 @@ import { ToolRegistry } from './tool-registry.js';
 import { GHLConfig } from './types/ghl-types.js';
 import { registerExecuteRoutes } from './execute-route.js';
 import { resolveVersion } from './clients/version-router.js';
-import { createPerRequestConfig } from './request-config.js';
+import { resolveRequestConfig, RequestConfigError } from './request-config.js';
+import { registerLegacySse } from './legacy-sse.js';
+import { GHL_MCP_SERVER_INSTRUCTIONS } from './server-instructions.js';
 
 dotenv.config();
 
@@ -52,7 +54,10 @@ function readConfig(): GHLConfig {
 function createMcpServer(client: EnhancedGHLClient): McpServer {
   const server = new McpServer(
     { name: 'ghl-mcp-server', version: '3.0.0' },
-    { capabilities: { tools: {} } }
+    {
+      capabilities: { tools: {} },
+      instructions: GHL_MCP_SERVER_INSTRUCTIONS,
+    }
   );
   new ToolRegistry(client).registerAll(server);
   return server;
@@ -75,22 +80,7 @@ async function main() {
 
   await ghlClient.testConnection();
 
-  const app = express();
-  app.use(cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (/^https?:\/\/localhost(:\d+)?$/.test(origin) ||
-          origin === 'https://chatgpt.com' ||
-          origin === 'https://chat.openai.com') {
-        return callback(null, true);
-      }
-      callback(new Error('CORS not allowed'));
-    },
-    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'mcp-session-id', 'x-ghl-access-token', 'x-ghl-location-id', 'x-ghl-user-type'],
-    credentials: true,
-  }));
-  app.use(express.json());
+  const app = createHttpApp();
   app.use((req, _res, next) => {
     log('debug', `${req.method} ${req.path}`, { ip: req.ip });
     next();
@@ -98,16 +88,8 @@ async function main() {
 
   app.all('/mcp', async (req, res) => {
     try {
-      const reqAccessToken = req.headers['x-ghl-access-token'] as string | undefined;
-      const reqLocationId = req.headers['x-ghl-location-id'] as string | undefined;
-      const client = reqAccessToken && reqLocationId
-        ? new EnhancedGHLClient(createPerRequestConfig(
-            config,
-            reqAccessToken,
-            reqLocationId,
-            req.headers['x-ghl-user-type'],
-          ))
-        : ghlClient;
+      const requestConfig = resolveRequestConfig(config, req.headers);
+      const client = requestConfig === config ? ghlClient : new EnhancedGHLClient(requestConfig);
       const requestServer = createMcpServer(client);
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
       await requestServer.connect(transport);
@@ -117,31 +99,14 @@ async function main() {
       });
     } catch (err: any) {
       log('error', 'Streamable HTTP error', { error: err.message });
-      if (!res.headersSent) res.status(500).json({ error: 'Internal server error' });
+      if (!res.headersSent) res.status(err instanceof RequestConfigError ? 400 : 500).json({ error: err instanceof RequestConfigError ? err.message : 'Internal server error' });
     }
   });
 
-  const handleSSE = async (req: express.Request, res: express.Response) => {
-    const sessionId = String(req.query.sessionId || 'unknown');
-    log('info', 'SSE connection', { sessionId });
-
-    try {
-      const sseServer = createMcpServer(ghlClient);
-      const transport = new SSEServerTransport('/sse', res);
-      await sseServer.connect(transport);
-      req.on('close', () => {
-        log('info', 'SSE connection closed', { sessionId });
-        sseServer.close().catch(() => {});
-      });
-    } catch (err: any) {
-      log('error', 'SSE error', { error: err.message, sessionId });
-      if (!res.headersSent) res.status(500).json({ error: 'Failed to establish SSE connection' });
-      else res.end();
-    }
-  };
-
-  app.get('/sse', handleSSE);
-  app.post('/sse', handleSSE);
+  registerLegacySse(app, (req) => {
+    const requestConfig = resolveRequestConfig(config, req.headers);
+    return createMcpServer(requestConfig === config ? ghlClient : new EnhancedGHLClient(requestConfig));
+  });
 
   app.get('/', (_req, res) => {
     res.json({
@@ -184,6 +149,7 @@ async function main() {
     res.json({
       capabilities: { tools: {} },
       server: { name: 'ghl-mcp-server', version: '3.0.0' },
+      instructions: GHL_MCP_SERVER_INSTRUCTIONS,
       transport: ['streamable-http', 'sse'],
     });
   });
@@ -198,31 +164,13 @@ async function main() {
     });
   });
 
-  app.post('/tools/call', async (req, res) => {
-    const { name, arguments: args } = req.body;
-    if (!name) {
-      res.status(400).json({ error: 'Missing tool name' });
-      return;
-    }
-
-    try {
-      const result = await registry.callTool(name, args || {});
-      if (result === undefined) {
-        res.status(404).json({ error: `Unknown tool: ${name}` });
-        return;
-      }
-      res.json({ result });
-    } catch (err: any) {
-      log('error', `REST tool error: ${name}`, { error: err.message });
-      res.status(500).json({ error: `Tool execution failed: ${err.message}` });
-    }
-  });
-
-  app.listen(port, '0.0.0.0', () => {
+  const bindHost = resolveBindHost();
+  app.listen(port, bindHost, () => {
+    console.log(describeBinding(bindHost, port));
     console.log('GoHighLevel MCP Server v2.0');
-    console.log(`Server: http://0.0.0.0:${port}`);
-    console.log(`Streamable HTTP: http://0.0.0.0:${port}/mcp`);
-    console.log(`Legacy SSE: http://0.0.0.0:${port}/sse`);
+    console.log(`Server: http://${bindHost}:${port}`);
+    console.log(`Streamable HTTP: http://${bindHost}:${port}/mcp`);
+    console.log(`Legacy SSE: http://${bindHost}:${port}/sse`);
     console.log(`Tools: ${toolCount}`);
   });
 

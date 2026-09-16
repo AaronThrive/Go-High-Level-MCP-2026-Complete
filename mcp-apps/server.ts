@@ -1,5 +1,6 @@
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { createRequire } from 'node:module';
 import type { CallToolResult, ReadResourceResult } from '@modelcontextprotocol/sdk/types.js';
 import { readFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
@@ -74,6 +75,7 @@ type AppRegistrationServer = Parameters<typeof registerAppResource>[0] & Paramet
 const appDir = dirname(fileURLToPath(import.meta.url));
 const packageRoot = appDir.endsWith(`${process.platform === 'win32' ? '\\' : '/'}dist`) ? resolve(appDir, '..') : appDir;
 const repoRoot = resolve(packageRoot, '..');
+const { GHL_MCP_SERVER_INSTRUCTIONS } = createRequire(import.meta.url)(join(repoRoot, 'dist', 'server-instructions.js')) as { GHL_MCP_SERVER_INSTRUCTIONS: string };
 const htmlPath = join(packageRoot, 'dist', 'mcp-app.html');
 const appResourceUri = 'ui://ghl-mcp-apps/app.html';
 
@@ -399,10 +401,13 @@ const APP_DEFINITIONS: AppDefinition[] = [
 ];
 
 export function createServer(): McpServer {
-  const server = new McpServer({
-    name: 'ghl-mcp-apps',
-    version: '0.2.0',
-  });
+  const server = new McpServer(
+    {
+      name: 'ghl-mcp-apps',
+      version: '0.2.0',
+    },
+    { instructions: GHL_MCP_SERVER_INSTRUCTIONS },
+  );
 
   const appRegistrationServer = server as unknown as AppRegistrationServer;
 

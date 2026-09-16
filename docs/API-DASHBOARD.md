@@ -10,8 +10,8 @@ Generated from official GHL docs commit: 0af86a4
 - Current/default v3 coverage: 100%
 - Legacy v2 compatibility endpoints: 590 / 590
 - Dual-generation endpoint union: 681 / 681
-- MCP tools in registry: 927
-- Read tools: 440
+- MCP tools in registry: 926
+- Read tools: 439
 - Write tools: 371
 - Delete/destructive tools: 116
 - Current-v3 local-only endpoint references tracked: 265
@@ -21,7 +21,7 @@ Generated from official GHL docs commit: 0af86a4
 
 - Official OpenAPI tools: 301
 - Live-docs supplemental tools: 4
-- Legacy-compatible tools: 493
+- Legacy-compatible tools: 492
 - Private/internal unstable tools: 88
 - Deprecated/compatibility tools: 41
 
@@ -30,7 +30,7 @@ Generated from official GHL docs commit: 0af86a4
 | Category | Tools |
 | --- | ---: |
 | official-ad-publishing | 95 |
-| agent-workspace | 44 |
+| agent-workspace | 43 |
 | calendar | 39 |
 | official-calendars | 33 |
 | courses | 32 |

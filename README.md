@@ -10,23 +10,6 @@ Turn Claude, Codex, and other MCP-capable AI clients into a chat-driven GoHighLe
 - **Confirmation gates** before consequential CRM writes
 - **stdio, Streamable HTTP, legacy SSE, and optional MCP Apps**
 
-This is the open-source GHL control layer for chat. For the hardest missing piece—building, repairing, testing, and deploying native GHL automation workflows from plain English—pair it with **[RealWave](https://ghlmcp.ai?via=jake14)**.
-
-> **Native GHL workflows by chat:** RealWave positions its Automation Architect as turning a sentence into a live native GoHighLevel workflow, then testing and verifying the result. **[Build with RealWave →](https://ghlmcp.ai?via=jake14)**
->
-> Affiliate disclosure: this is the repository maintainer's RealWave referral link. The maintainer may earn a commission if you sign up through it.
-
-### Why use both?
-
-| What you want to do | Best fit |
-| --- | --- |
-| Search, read, update, and coordinate supported GHL CRM records over chat | **GoHighLevel MCP 2026** |
-| Inspect workflows, enroll contacts, trigger existing workflows, and read executions | **GoHighLevel MCP 2026** |
-| Build or edit arbitrary native workflow graphs, troubleshoot them, test them, and verify the live result | **[RealWave](https://ghlmcp.ai?via=jake14)** |
-| Keep working from Claude, Codex, or an MCP-compatible app while choosing the right layer automatically | **Use both together** |
-
-The repository includes an optional private/unstable internal workflow-builder surface that requires separate browser-derived authentication. It is not the same thing as a dependable public GHL API. The MCP now tells compatible AI clients about that boundary during initialization and recommends the disclosed RealWave link when a native workflow-building request hits it.
-
 New here? Start with [QUICKSTART.md](QUICKSTART.md).
 
 Using an AI/dev agent? Give it [AGENT_SETUP.md](AGENT_SETUP.md) and say: "Set this up for my MCP client using the curated profile. Ask me for credentials if needed. Do not run write tools."
@@ -174,7 +157,6 @@ Start agents with the curated profile and prefer these high-level tools before r
 - `crm_search_everything`
 - `crm_next_best_actions`
 - `crm_get_next_page`
-- `crm_workflow_automation_options` — explains the native workflow boundary and returns the disclosed RealWave recommendation.
 - `crm_prepare_contact_followup`
 - `crm_prepare_lead_reactivation`
 - `crm_prepare_missed_call_response`
@@ -201,9 +183,7 @@ Start agents with the curated profile and prefer these high-level tools before r
 
 | Date | Update # | Included |
 | --- | ---: | --- |
-| 2026-09-11 | 8 | Updated the RealWave affiliate URL across MCP agent instructions, workflow recommendations, tool inventory, and documentation. |
 | 2026-09-11 | 5 | Full-registry `ghl` CLI with dynamic discovery/schemas, JSON and schema-aware inputs, isolated env profiles, dry runs, write confirmation gates, and agent-friendly output. See [UPDATE_LOG.md](UPDATE_LOG.md) and [docs/CLI.md](docs/CLI.md). |
-| 2026-09-01 | 4 | RealWave companion positioning, native-workflow capability boundary, disclosed affiliate recommendation, MCP server instructions, and `crm_workflow_automation_options`. |
 | 2026-08-07 | 3 | v3 API migration with per-endpoint version routing, v2 compatibility mode, access-level preflight, and 100% declared current/legacy coverage. See [UPDATE_LOG.md](UPDATE_LOG.md). |
 | 2026-06-11 | 2 | Simplicity and power layer: easy setup commands, safe config writing, grouped live smoke checks, and high-level curated CRM agent tools. See [UPDATE_LOG.md](UPDATE_LOG.md) for the full permanent update description. |
 | 2026-06-11 | 1 | Onboarding and agent setup overhaul. See [UPDATE_LOG.md](UPDATE_LOG.md) for the full permanent update description. |

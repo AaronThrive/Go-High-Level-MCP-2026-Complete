@@ -11,8 +11,8 @@ Generated from official GHL docs commit: 0af86a4
 - Legacy v2 compatibility endpoints: 590 / 590
 - Dual-generation endpoint union: 681 / 681
 - MCP tools in registry: 926
-- Read tools: 445
-- Write tools: 365
+- Read tools: 439
+- Write tools: 371
 - Delete/destructive tools: 116
 - Current-v3 local-only endpoint references tracked: 265
 - Dual-generation local-only endpoint references tracked: 245

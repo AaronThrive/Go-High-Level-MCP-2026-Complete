@@ -1,6 +1,14 @@
-# GoHighLevel MCP Server
+# GoHighLevel MCP 2026
 
-Model Context Protocol server for GoHighLevel. It exposes GHL API operations as MCP tools over stdio, Streamable HTTP, legacy SSE, and optional MCP Apps.
+## Talk to GoHighLevel. Get the work done.
+
+Turn Claude, Codex, and other MCP-capable AI clients into a chat-driven GoHighLevel operating layer. Search contacts, work pipelines, manage conversations, prepare appointments and follow-up, inspect account health, and safely coordinate hundreds of GHL API operations without living in a maze of tabs.
+
+- **927 MCP tools** across the full registry
+- **100% of the locked current v3 endpoint surface covered** (`661 / 661`)
+- **Curated agent workflows** for useful outcomes instead of raw endpoint hunting
+- **Confirmation gates** before consequential CRM writes
+- **stdio, Streamable HTTP, legacy SSE, and optional MCP Apps**
 
 New here? Start with [QUICKSTART.md](QUICKSTART.md).
 
@@ -124,6 +132,22 @@ npm run tools:explorer
 
 The static explorer is `docs/tool-explorer.html`.
 
+## Full Registry CLI
+
+The package also exposes every visible MCP tool through the schema-driven `ghl` command. The CLI reads the live registry, so generated API refreshes do not require hand-written subcommands.
+
+```bash
+npm link
+ghl tools --search contacts --json
+ghl describe get_contact --json
+ghl get_contact --contact-id CONTACT_ID --dry-run
+ghl get_contact --contact-id CONTACT_ID
+```
+
+Tool calls accept schema-aware flags, JSON, files, or stdin and emit JSON by default. All write/delete tools require `--confirm`; `--dry-run` validates and resolves any call without contacting GHL. Use `--env-file` or `GHL_ENV_FILE` to keep location-specific credentials outside the repository.
+
+See [docs/CLI.md](docs/CLI.md) for installation, discovery, input formats, safety behavior, and agent usage.
+
 ## High-Level Agent Tools
 
 Start agents with the curated profile and prefer these high-level tools before raw endpoints:
@@ -159,6 +183,8 @@ Start agents with the curated profile and prefer these high-level tools before r
 
 | Date | Update # | Included |
 | --- | ---: | --- |
+| 2026-09-11 | 5 | Full-registry `ghl` CLI with dynamic discovery/schemas, JSON and schema-aware inputs, isolated env profiles, dry runs, write confirmation gates, and agent-friendly output. See [UPDATE_LOG.md](UPDATE_LOG.md) and [docs/CLI.md](docs/CLI.md). |
+| 2026-08-07 | 3 | v3 API migration with per-endpoint version routing, v2 compatibility mode, access-level preflight, and 100% declared current/legacy coverage. See [UPDATE_LOG.md](UPDATE_LOG.md). |
 | 2026-06-11 | 2 | Simplicity and power layer: easy setup commands, safe config writing, grouped live smoke checks, and high-level curated CRM agent tools. See [UPDATE_LOG.md](UPDATE_LOG.md) for the full permanent update description. |
 | 2026-06-11 | 1 | Onboarding and agent setup overhaul. See [UPDATE_LOG.md](UPDATE_LOG.md) for the full permanent update description. |
 
@@ -169,7 +195,7 @@ Start agents with the curated profile and prefer these high-level tools before r
 - Legacy v2 compatibility coverage: `590 / 590` (100%)
 - Dual-generation union coverage: `681 / 681` (100%)
 - Generated official endpoint tools: `543`
-- MCP tools in the full registry: `926`
+- MCP tools in the full registry: `927`
 - Local-only endpoint references: current v3 `265`; dual-generation union `245`
 
 The scanner reads both the v2 (`apps/*.json`) and v3 (`apps/v3/*-v3.json`) OpenAPI fragments. v3 endpoints are the source of truth; superseded v2 entries are retained for `GHL_API_GENERATION=v2` legacy mode.
@@ -180,3 +206,5 @@ The scanner reads both the v2 (`apps/*.json`) and v3 (`apps/v3/*-v3.json`) OpenA
 - `test-tool` refuses write/destructive tools unless `--confirm` is supplied.
 - Curated workflow tools stage confirmation queues for writes.
 - Use `curated` for beginners and `stable` for production.
+
+HTTP deployments: see [HTTP security](docs/HTTP-SECURITY.md) for local binding, Docker, allowed origins, and bearer-token configuration.

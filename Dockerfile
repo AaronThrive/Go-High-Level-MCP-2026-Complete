@@ -12,6 +12,7 @@ FROM node:22-bookworm-slim AS runtime
 
 WORKDIR /app
 ENV NODE_ENV=production
+ENV GHL_MCP_BIND_HOST=0.0.0.0
 COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/scripts ./scripts

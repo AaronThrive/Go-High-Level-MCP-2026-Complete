@@ -1,6 +1,9 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  // Onboarding CLI tests rebuild dist; transport tests start those built servers.
+  // Keep suites serial so a rebuild cannot remove modules under a live test.
+  maxWorkers: 1,
   roots: ['<rootDir>/tests'],
   testMatch: [
     '**/tests/**/*.test.ts'

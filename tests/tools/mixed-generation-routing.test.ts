@@ -108,3 +108,20 @@ describe('mixed-generation handwritten and composed routing', () => {
     },
   );
 });
+
+
+describe('unworked-lead read contract', () => {
+  it.each(['v3', 'v2'] as const)('uses valid requests and preserves failures in %s', async (generation) => {
+    const { client, calls } = captureClient(generation);
+    const tools = new AgentWorkspaceTools(client as never);
+    const result = await tools.handleToolCall('crm_find_unworked_leads') as any;
+    expect(calls).toEqual([
+      expect.objectContaining({ method: 'GET', path: '/forms/submissions?locationId=location-123&limit=20' }),
+      expect.objectContaining({ method: 'POST', path: '/contacts/search', body: { locationId: 'location-123', pageLimit: 20 } }),
+    ]);
+    expect(result.resultSummary).toMatchObject({ successfulReads: 2, failedReads: 0 });
+    client.makeRequest = async () => { throw new Error('provider unavailable'); };
+    const failure = await tools.handleToolCall('crm_find_unworked_leads') as any;
+    expect(failure.resultSummary).toMatchObject({ successfulReads: 0, failedReads: 2 });
+  });
+});
